@@ -19,7 +19,7 @@ jobs:
         with:
           command: build
           args: --release --all-features
-          - name: rsync deployments
+            - name: rsync deployments
       - uses: burnett01/rsync-deployments@5.1
         with:
           switches: -avzr --delete
