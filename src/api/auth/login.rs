@@ -63,5 +63,4 @@ fn query(data: LoginRequest, pool: web::Data<Pool>) -> Result<LoginResponse, Ser
             return Err(ServiceError::InternalServerError);
         }
     }
-
 }

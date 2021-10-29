@@ -4,7 +4,7 @@ use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 use serde::{Serialize, Deserialize};
 use crate::schema::users::dsl::{email, users};
 use crate::model::user::{NewUser, User};
-use crate::utils::hash_password;
+use crate::utils::{hash_password, validate_email};
 use crate::{errors::ServiceError, model::db::Pool};
 
 #[derive(Deserialize)]
@@ -36,6 +36,10 @@ fn query(data: RegisterRequest, pool: web::Data<Pool>) -> Result<RegisterRespons
 
     let conn: &PgConnection = &pool.get().unwrap();
     use crate::diesel::ExpressionMethods;
+
+    if !validate_email(&data.email) {
+        return Err(ServiceError::BadRequest("Wrong E-mail Format".to_string()))
+    }
 
     users
         .filter(email.eq(&data.email))

@@ -4,6 +4,7 @@ use actix_web::Result;
 use chrono::Utc;
 use dotenv::dotenv;
 use jsonwebtoken::{EncodingKey, Header};
+use regex::Regex;
 use serde::Serialize;
 use crate::errors::ServiceError;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::{rand_core::OsRng, SaltString}};
@@ -70,4 +71,10 @@ pub fn generate_jwt(email: &String) -> Result<String, ServiceError> {
         Ok(token) => Ok(token),
         Err(_) => Err(ServiceError::InternalServerError)
     }
+}
+
+pub fn validate_email(email: &String) -> bool {
+    let email_regex = Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
+
+    email_regex.is_match(email)
 }

@@ -838,6 +838,7 @@ dependencies = [
  "dotenv",
  "jsonwebtoken",
  "rand_core 0.6.3",
+ "regex",
  "serde",
  "serde_json",
 ]
