@@ -1,4 +1,4 @@
-use actix_web::{ResponseError, HttpResponse};
+use actix_web::{HttpResponse, ResponseError};
 use derive_more::Display;
 
 #[derive(Debug, Display)]
@@ -10,19 +10,16 @@ pub enum ServiceError {
     BadRequest(String),
 
     #[display(fmt = "Authentication Error")]
-    AuthenticationError
+    AuthenticationError,
 }
 
 impl ResponseError for ServiceError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            ServiceError::InternalServerError => {
-                HttpResponse::InternalServerError().json("Internal Server Error, please please pleaseee try again maybe later")
-            }
+            ServiceError::InternalServerError => HttpResponse::InternalServerError()
+                .json("Internal Server Error, please please pleaseee try again maybe later"),
             ServiceError::BadRequest(ref message) => HttpResponse::BadRequest().json(message),
-            ServiceError::AuthenticationError => {
-                HttpResponse::Unauthorized().json("Unauthorized")
-            }
+            ServiceError::AuthenticationError => HttpResponse::Unauthorized().json("Unauthorized"),
         }
     }
 }

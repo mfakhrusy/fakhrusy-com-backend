@@ -1,13 +1,16 @@
 use std::env;
 
+use crate::errors::ServiceError;
 use actix_web::Result;
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
+};
 use chrono::Utc;
 use dotenv::dotenv;
 use jsonwebtoken::{EncodingKey, Header};
 use regex::Regex;
 use serde::Serialize;
-use crate::errors::ServiceError;
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier, password_hash::{rand_core::OsRng, SaltString}};
 
 pub struct HashedPasswordAndSalt {
     pub hashed_password: String,
@@ -20,27 +23,23 @@ pub fn hash_password(password: &str) -> Result<HashedPasswordAndSalt, ServiceErr
 
     let hashed_password = argon2
         .hash_password(password.as_bytes(), &salt)
-        .map_err(|_err| {
-            ServiceError::InternalServerError
-        });
+        .map_err(|_err| ServiceError::InternalServerError);
 
     match hashed_password {
         Err(err) => Err(err),
         Ok(data) => Ok(HashedPasswordAndSalt {
             hashed_password: data.to_string(),
             salt: salt.as_str().to_string(),
-        })
+        }),
     }
 }
 
 pub fn verify_password(password: &str, hash_str: &str) -> Result<(), ServiceError> {
     let hash = PasswordHash::new(hash_str);
     let argon2 = Argon2::default();
-    argon2.verify_password(password.as_bytes(), &hash.unwrap()).map_err(
-        |_err| {
-            ServiceError::InternalServerError
-        }
-    )
+    argon2
+        .verify_password(password.as_bytes(), &hash.unwrap())
+        .map_err(|_err| ServiceError::InternalServerError)
 }
 
 #[derive(Serialize)]
@@ -64,17 +63,24 @@ pub fn generate_jwt(email: &String) -> Result<String, ServiceError> {
         exp: now + one_week_in_second,
         email: email.to_string(),
     };
-    
-    let jwt_token = jsonwebtoken::encode::<JWTClaim>(&Header::default(), &jwt_claim, &EncodingKey::from_secret(jwt_secret_bytes));
+
+    let jwt_token = jsonwebtoken::encode::<JWTClaim>(
+        &Header::default(),
+        &jwt_claim,
+        &EncodingKey::from_secret(jwt_secret_bytes),
+    );
 
     match jwt_token {
         Ok(token) => Ok(token),
-        Err(_) => Err(ServiceError::InternalServerError)
+        Err(_) => Err(ServiceError::InternalServerError),
     }
 }
 
 pub fn validate_email(email: &String) -> bool {
-    let email_regex = Regex::new(r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})").unwrap();
+    let email_regex = Regex::new(
+        r"^([a-z0-9_+]([a-z0-9_+.]*[a-z0-9_+])?)@([a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6})",
+    )
+    .unwrap();
 
     email_regex.is_match(email)
 }
