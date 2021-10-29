@@ -65,5 +65,4 @@ fn query(data: RegisterRequest, pool: web::Data<Pool>) -> Result<RegisterRespons
                 })
             }
         })
-
 }

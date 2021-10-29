@@ -1,6 +1,5 @@
-use actix_web::{error, web, App, HttpResponse, HttpServer, Responder, get};
+use actix_web::{error, web, App, HttpResponse, HttpServer};
 mod api;
-// use api::auth::{login, register, forget_password, test};
 mod schema;
 mod model;
 mod errors;
@@ -15,6 +14,7 @@ use dotenv::dotenv;
 use std::env;
 
 use crate::api::auth::register::register_handler;
+use crate::api::auth::login::login_handler;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -38,6 +38,10 @@ async fn main() -> std::io::Result<()> {
         .service(
             web::resource("/register")
             .route(web::post().to(register_handler))
+        )
+        .service(
+            web::resource("/login")
+            .route(web::post().to(login_handler))
         )
     })
     .bind("127.0.0.1:8080")?
