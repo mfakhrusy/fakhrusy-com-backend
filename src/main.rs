@@ -40,8 +40,11 @@ async fn main() -> std::io::Result<()> {
                         .into()
                 }),
             )
-            .service(web::resource("/register").route(web::post().to(register_handler)))
-            .service(web::resource("/login").route(web::post().to(login_handler)))
+            .service(
+                web::scope("/auth")
+                    .service(web::resource("/register").route(web::post().to(register_handler)))
+                    .service(web::resource("/login").route(web::post().to(login_handler))),
+            )
     })
     .bind("127.0.0.1:8081")?
     .run()
