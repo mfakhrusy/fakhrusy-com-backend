@@ -46,7 +46,7 @@ async fn main() -> std::io::Result<()> {
                     .service(web::resource("/login").route(web::post().to(login_handler))),
             )
     })
-    .bind("127.0.0.1:8081")?
+    .bind("127.0.0.1:8080")?
     .run()
     .await
 }
