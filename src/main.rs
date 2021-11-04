@@ -42,11 +42,12 @@ async fn main() -> std::io::Result<()> {
             )
             .service(
                 web::scope("/auth")
-                    .route("/tes", web::get().to(|| HttpResponse::Ok()))
+                    .service(web::resource("/tes").route(web::get().to(|| HttpResponse::Gone())))
+                    .service(web::resource("/register").route(web::get().to(|| HttpResponse::Gone())))
                     .service(web::resource("/register").route(web::post().to(register_handler)))
                     .service(web::resource("/login").route(web::post().to(login_handler))),
             )
-            .route("/tes", web::get().to(|| HttpResponse::Ok()))
+            .route("/tes", web::get().to(|| HttpResponse::Gone()))
     })
     .bind("127.0.0.1:8080")?
     .run()
