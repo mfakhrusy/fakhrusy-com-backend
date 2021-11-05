@@ -50,7 +50,8 @@ async fn main() -> std::io::Result<()> {
                     .service(web::resource("/login").route(web::post().to(login_handler))),
             )
             .service(web::resource("/register").route(web::get().to(|| HttpResponse::Conflict())))
-            .service(web::resource("/register").route(web::post().to(register_handler)))
+            // .service(web::resource("/register").route(web::post().to(register_handler)))
+            .service(web::resource("/register").route(web::post().to(|| HttpResponse::InsufficientStorage())))
             .service(web::resource("/login").route(web::post().to(login_handler)))
             .route("/tes", web::get().to(|| HttpResponse::Gone()))
     })
