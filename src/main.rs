@@ -41,9 +41,11 @@ async fn main() -> std::io::Result<()> {
                 }),
             )
             .service(
-                web::scope("/auth")
-                    .service(web::resource("/register").route(web::post().to(register_handler)))
-                    .service(web::resource("/login").route(web::post().to(login_handler))),
+                web::scope("/v1").service(
+                    web::scope("/auth")
+                        .service(web::resource("/register").route(web::post().to(register_handler)))
+                        .service(web::resource("/login").route(web::post().to(login_handler))),
+                ),
             )
     })
     .bind("127.0.0.1:8080")?
