@@ -1,0 +1,21 @@
+
+POST /v1/auth/login HTTP/1.1
+Host: localhost:8082
+Content-Type: application/json
+Content-Length: 68
+Connection: keep-alive
+
+{
+    "email": "my@email.com",
+    "password": "password123321"
+}
+
+# GET /v1/profile HTTP/1.1
+# Host: localhost:8082
+# Content-Type: application/json
+# Content-Length: 68
+
+# {
+#     "email": "my@email.com",
+#     "password": "password123321"
+# }

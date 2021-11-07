@@ -1,3 +1,6 @@
+use crate::constants::MESSAGE_LOGIN_SUCCESS;
+use crate::model::errors::Error;
+use crate::model::response::ResponseBody;
 use crate::model::user::User;
 use crate::schema::users::dsl::{email, users};
 use actix_web::error::BlockingError;
@@ -6,7 +9,7 @@ use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 
 use crate::utils::{generate_jwt, verify_password};
-use crate::{errors::ServiceError, model::db::Pool};
+use crate::{model::db::Pool, model::errors::ServiceError};
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
@@ -36,14 +39,19 @@ pub async fn login_handler(
     }
 }
 
-fn query(data: LoginRequest, pool: web::Data<Pool>) -> Result<LoginResponse, ServiceError> {
+fn query(
+    data: LoginRequest,
+    pool: web::Data<Pool>,
+) -> Result<ResponseBody<LoginResponse>, ServiceError> {
     let conn: &PgConnection = &pool.get().unwrap();
     use crate::diesel::ExpressionMethods;
 
     let res = users.filter(email.eq(&data.email)).load::<User>(conn);
 
     match res {
-        Err(diesel::result::Error::NotFound) => return Err(ServiceError::AuthenticationError),
+        Err(diesel::result::Error::NotFound) => {
+            return Err(ServiceError::Unauthorized(Error::EmailOrPasswordMismatch))
+        }
         Err(_) => return Err(ServiceError::InternalServerError),
         Ok(mut current_users) => {
             if let Some(user) = current_users.pop() {
@@ -51,13 +59,19 @@ fn query(data: LoginRequest, pool: web::Data<Pool>) -> Result<LoginResponse, Ser
                     Ok(_) => {
                         let jwt_token = generate_jwt(&data.email)?;
 
-                        return Ok(LoginResponse {
-                            token: jwt_token,
-                            email: user.email,
-                            full_name: user.full_name.unwrap_or_default(),
-                        });
+                        return Ok(ResponseBody::new(
+                            MESSAGE_LOGIN_SUCCESS,
+                            Some(LoginResponse {
+                                token: jwt_token,
+                                email: user.email,
+                                full_name: user.full_name.unwrap_or_default(),
+                            }),
+                            None,
+                        ));
                     }
-                    Err(_) => return Err(ServiceError::AuthenticationError),
+                    Err(_) => {
+                        return Err(ServiceError::Unauthorized(Error::EmailOrPasswordMismatch))
+                    }
                 }
             }
 

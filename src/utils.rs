@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::errors::ServiceError;
+use crate::model::errors::ServiceError;
 use actix_web::Result;
 use argon2::{
     password_hash::{rand_core::OsRng, SaltString},

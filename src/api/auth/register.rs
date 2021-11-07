@@ -1,7 +1,7 @@
 use crate::model::user::{NewUser, User};
 use crate::schema::users::dsl::{email, users};
 use crate::utils::{hash_password, validate_email};
-use crate::{errors::ServiceError, model::db::Pool};
+use crate::{model::db::Pool, model::errors::ServiceError};
 use actix_web::error::BlockingError;
 use actix_web::{web, HttpResponse, Result};
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};

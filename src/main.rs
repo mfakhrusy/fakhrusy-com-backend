@@ -1,6 +1,7 @@
 use actix_web::{error, web, App, HttpResponse, HttpServer};
 mod api;
-mod errors;
+mod constants;
+mod middleware;
 mod model;
 mod schema;
 mod utils;
@@ -41,14 +42,18 @@ async fn main() -> std::io::Result<()> {
                 }),
             )
             .service(
-                web::scope("/v1").service(
-                    web::scope("/auth")
-                        .service(web::resource("/register").route(web::post().to(register_handler)))
-                        .service(web::resource("/login").route(web::post().to(login_handler))),
-                ),
+                web::scope("/v1")
+                    .service(
+                        web::scope("/auth")
+                            .service(
+                                web::resource("/register").route(web::post().to(register_handler)),
+                            )
+                            .service(web::resource("/login").route(web::post().to(login_handler))),
+                    )
+                    .service(web::resource("/profile").route(web::get().to(|| HttpResponse::Ok()))),
             )
     })
-    .bind("127.0.0.1:8080")?
+    .bind("127.0.0.1:8083")?
     .run()
     .await
 }
