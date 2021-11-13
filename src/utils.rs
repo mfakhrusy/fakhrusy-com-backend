@@ -8,9 +8,11 @@ use argon2::{
 };
 use chrono::Utc;
 use dotenv::dotenv;
-use jsonwebtoken::{EncodingKey, Header};
+use jsonwebtoken::{
+    decode, errors::Result as JWTResult, DecodingKey, EncodingKey, Header, TokenData, Validation,
+};
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub struct HashedPasswordAndSalt {
     pub hashed_password: String,
@@ -42,7 +44,7 @@ pub fn verify_password(password: &str, hash_str: &str) -> Result<(), ServiceErro
         .map_err(|_err| ServiceError::InternalServerError)
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct JWTClaim {
     // issued at
     pub iat: i64,
@@ -74,6 +76,18 @@ pub fn generate_jwt(email: &String) -> Result<String, ServiceError> {
         Ok(token) => Ok(token),
         Err(_) => Err(ServiceError::InternalServerError),
     }
+}
+
+pub fn decode_jwt(token: String) -> JWTResult<TokenData<JWTClaim>> {
+    dotenv().ok();
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let decoded = decode::<JWTClaim>(
+        &token,
+        &DecodingKey::from_secret(jwt_secret.as_bytes()),
+        &Validation::default(),
+    );
+
+    return decoded;
 }
 
 pub fn validate_email(email: &String) -> bool {

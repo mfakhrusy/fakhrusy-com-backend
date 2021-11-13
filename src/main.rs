@@ -1,6 +1,7 @@
 use actix_web::{error, web, App, HttpResponse, HttpServer};
 mod api;
 mod constants;
+mod extractor;
 mod middleware;
 mod model;
 mod schema;
@@ -19,6 +20,7 @@ use std::env;
 
 use crate::api::auth::login::login_handler;
 use crate::api::auth::register::register_handler;
+use crate::api::profile::my_profile::my_profile_handler;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -33,6 +35,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
+            .wrap(actix_web::middleware::Logger::default())
+            .wrap(crate::middleware::auth::Authentication)
             .app_data(
                 // Json extractor configuration for resources.
                 web::JsonConfig::default().error_handler(|err, _req| {
@@ -50,7 +54,7 @@ async fn main() -> std::io::Result<()> {
                             )
                             .service(web::resource("/login").route(web::post().to(login_handler))),
                     )
-                    .service(web::resource("/profile").route(web::get().to(|| HttpResponse::Ok()))),
+                    .service(web::resource("/profile").route(web::get().to(my_profile_handler))),
             )
     })
     .bind("127.0.0.1:8083")?

@@ -40,13 +40,13 @@ pub async fn login_handler(
 }
 
 fn query(
-    data: LoginRequest,
+    req: LoginRequest,
     pool: web::Data<Pool>,
 ) -> Result<ResponseBody<LoginResponse>, ServiceError> {
     let conn: &PgConnection = &pool.get().unwrap();
     use crate::diesel::ExpressionMethods;
 
-    let res = users.filter(email.eq(&data.email)).load::<User>(conn);
+    let res = users.filter(email.eq(&req.email)).load::<User>(conn);
 
     match res {
         Err(diesel::result::Error::NotFound) => {
@@ -55,9 +55,9 @@ fn query(
         Err(_) => return Err(ServiceError::InternalServerError),
         Ok(mut current_users) => {
             if let Some(user) = current_users.pop() {
-                match verify_password(&data.password, &user.hashed_password) {
+                match verify_password(&req.password, &user.hashed_password) {
                     Ok(_) => {
-                        let jwt_token = generate_jwt(&data.email)?;
+                        let jwt_token = generate_jwt(&req.email)?;
 
                         return Ok(ResponseBody::new(
                             MESSAGE_LOGIN_SUCCESS,

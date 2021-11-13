@@ -11,15 +11,15 @@ pub struct ResponseBody<T> {
 }
 
 impl<T> ResponseBody<T> {
-    pub fn new(message: &str, data: Option<T>, error_code: Option<Error>) -> ResponseBody<T> {
+    pub fn new(message: &str, data: Option<T>, error: Option<Error>) -> ResponseBody<T> {
         ResponseBody {
             message: message.to_string(),
             data,
-            error_code: match error_code {
+            error_code: match error {
                 None => None,
                 Some(code) => Some(code.to_string()),
             },
-            error_message: error_code_to_message(error_code),
+            error_message: error_code_to_message(error),
         }
     }
 }
