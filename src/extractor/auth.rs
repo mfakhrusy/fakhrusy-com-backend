@@ -1,13 +1,13 @@
 use actix_web::FromRequest;
 use futures::future::{ready, Ready};
 
-use crate::model::{auth::AuthMiddlewareData, errors::ServiceError};
+use crate::model::{auth::AuthMiddlewareData, errors::GlobalServiceError};
 
 pub struct AuthExtractor(Option<AuthMiddlewareData>);
 
 impl FromRequest for AuthExtractor {
-    type Error = ServiceError;
-    type Future = Ready<Result<Self, ServiceError>>;
+    type Error = GlobalServiceError;
+    type Future = Ready<Result<Self, GlobalServiceError>>;
     type Config = ();
 
     fn from_request(

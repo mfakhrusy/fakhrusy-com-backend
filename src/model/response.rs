@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::errors::{error_code_to_message, Error};
+use super::errors::{error_to_message, ServiceError};
 
 #[derive(Serialize, Deserialize)]
 pub struct ResponseBody<T> {
@@ -11,7 +11,7 @@ pub struct ResponseBody<T> {
 }
 
 impl<T> ResponseBody<T> {
-    pub fn new(message: &str, data: Option<T>, error: Option<Error>) -> ResponseBody<T> {
+    pub fn new(message: &str, data: Option<T>, error: Option<ServiceError>) -> ResponseBody<T> {
         ResponseBody {
             message: message.to_string(),
             data,
@@ -19,7 +19,7 @@ impl<T> ResponseBody<T> {
                 None => None,
                 Some(code) => Some(code.to_string()),
             },
-            error_message: error_code_to_message(error),
+            error_message: error_to_message(error),
         }
     }
 }

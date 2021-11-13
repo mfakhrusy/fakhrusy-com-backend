@@ -1,7 +1,7 @@
 use crate::constants::MESSAGE_GET_PROFILE_SUCCESS;
 use crate::extractor::auth::AuthExtractor;
 use crate::model::user::User;
-use crate::model::{db::Pool, errors::ServiceError, response::ResponseBody};
+use crate::model::{db::Pool, errors::GlobalServiceError, response::ResponseBody};
 use crate::schema::users::dsl::{email, users};
 use actix_web::error::BlockingError;
 use actix_web::{web, HttpResponse, Result};
@@ -19,7 +19,7 @@ pub struct MyProfileResponse {
 pub async fn my_profile_handler(
     pool: web::Data<Pool>,
     auth_data: AuthExtractor,
-) -> Result<HttpResponse, ServiceError> {
+) -> Result<HttpResponse, GlobalServiceError> {
     let user_email = auth_data.as_ref().map(|x| x.email.clone());
     let res = web::block(move || query(user_email.unwrap_or_default(), pool)).await;
 
@@ -27,7 +27,7 @@ pub async fn my_profile_handler(
         Ok(my_profile_response) => return Ok(HttpResponse::Ok().json(my_profile_response)),
         Err(err) => match err {
             BlockingError::Error(service_error) => Err(service_error),
-            BlockingError::Canceled => Err(ServiceError::InternalServerError),
+            BlockingError::Canceled => Err(GlobalServiceError::InternalServerError),
         },
     }
 }
@@ -35,7 +35,7 @@ pub async fn my_profile_handler(
 pub fn query(
     user_email: String,
     pool: web::Data<Pool>,
-) -> Result<ResponseBody<MyProfileResponse>, ServiceError> {
+) -> Result<ResponseBody<MyProfileResponse>, GlobalServiceError> {
     let conn: &PgConnection = &pool.get().unwrap();
     use crate::diesel::ExpressionMethods;
 
@@ -54,7 +54,7 @@ pub fn query(
         }
         Err(e) => {
             println!("{:?}", e);
-            Err(ServiceError::InternalServerError)
+            Err(GlobalServiceError::InternalServerError)
         }
     }
 }

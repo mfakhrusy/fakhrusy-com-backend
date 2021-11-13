@@ -1,7 +1,7 @@
 use crate::model::user::{NewUser, User};
 use crate::schema::users::dsl::{email, users};
 use crate::utils::{hash_password, validate_email};
-use crate::{model::db::Pool, model::errors::ServiceError};
+use crate::{model::db::Pool, model::errors::GlobalServiceError};
 use actix_web::error::BlockingError;
 use actix_web::{web, HttpResponse, Result};
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
@@ -23,30 +23,35 @@ struct RegisterResponse {
 pub async fn register_handler(
     req: web::Json<RegisterRequest>,
     pool: web::Data<Pool>,
-) -> Result<HttpResponse, ServiceError> {
+) -> Result<HttpResponse, GlobalServiceError> {
     let res = web::block(move || query(req.into_inner(), pool)).await;
 
     match res {
         Ok(user) => Ok(HttpResponse::Ok().json(user)),
         Err(err) => match err {
-            BlockingError::Canceled => Err(ServiceError::InternalServerError),
+            BlockingError::Canceled => Err(GlobalServiceError::InternalServerError),
             BlockingError::Error(err) => Err(err),
         },
     }
 }
 
-fn query(data: RegisterRequest, pool: web::Data<Pool>) -> Result<RegisterResponse, ServiceError> {
+fn query(
+    data: RegisterRequest,
+    pool: web::Data<Pool>,
+) -> Result<RegisterResponse, GlobalServiceError> {
     let conn: &PgConnection = &pool.get().unwrap();
     use crate::diesel::ExpressionMethods;
 
     if !validate_email(&data.email) {
-        return Err(ServiceError::BadRequest("Wrong E-mail Format".to_string()));
+        return Err(GlobalServiceError::BadRequest(
+            "Wrong E-mail Format".to_string(),
+        ));
     }
 
     users
         .filter(email.eq(&data.email))
         .load::<User>(conn)
-        .map_err(|_db_error| ServiceError::BadRequest("Invalid Data".into()))
+        .map_err(|_db_error| GlobalServiceError::BadRequest("Invalid Data".into()))
         .and_then(|mut _result| {
             let password_and_salt = hash_password(&data.password)?;
 
@@ -64,7 +69,7 @@ fn query(data: RegisterRequest, pool: web::Data<Pool>) -> Result<RegisterRespons
                 .execute(conn);
 
             match inserted_user {
-                Err(_) => Err(ServiceError::InternalServerError),
+                Err(_) => Err(GlobalServiceError::InternalServerError),
                 Ok(_) => Ok(RegisterResponse {
                     email: data.email,
                     full_name: data.full_name,

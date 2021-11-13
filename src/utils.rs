@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::model::errors::ServiceError;
+use crate::model::errors::GlobalServiceError;
 use actix_web::Result;
 use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
@@ -19,13 +19,13 @@ pub struct HashedPasswordAndSalt {
     pub salt: String,
 }
 
-pub fn hash_password(password: &str) -> Result<HashedPasswordAndSalt, ServiceError> {
+pub fn hash_password(password: &str) -> Result<HashedPasswordAndSalt, GlobalServiceError> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
 
     let hashed_password = argon2
         .hash_password(password.as_bytes(), &salt)
-        .map_err(|_err| ServiceError::InternalServerError);
+        .map_err(|_err| GlobalServiceError::InternalServerError);
 
     match hashed_password {
         Err(err) => Err(err),
@@ -36,12 +36,12 @@ pub fn hash_password(password: &str) -> Result<HashedPasswordAndSalt, ServiceErr
     }
 }
 
-pub fn verify_password(password: &str, hash_str: &str) -> Result<(), ServiceError> {
+pub fn verify_password(password: &str, hash_str: &str) -> Result<(), GlobalServiceError> {
     let hash = PasswordHash::new(hash_str);
     let argon2 = Argon2::default();
     argon2
         .verify_password(password.as_bytes(), &hash.unwrap())
-        .map_err(|_err| ServiceError::InternalServerError)
+        .map_err(|_err| GlobalServiceError::InternalServerError)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -53,7 +53,7 @@ pub struct JWTClaim {
     pub email: String,
 }
 
-pub fn generate_jwt(email: &String) -> Result<String, ServiceError> {
+pub fn generate_jwt(email: &String) -> Result<String, GlobalServiceError> {
     dotenv().ok();
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set");
     let jwt_secret_bytes = jwt_secret.as_bytes();
@@ -74,7 +74,7 @@ pub fn generate_jwt(email: &String) -> Result<String, ServiceError> {
 
     match jwt_token {
         Ok(token) => Ok(token),
-        Err(_) => Err(ServiceError::InternalServerError),
+        Err(_) => Err(GlobalServiceError::InternalServerError),
     }
 }
 

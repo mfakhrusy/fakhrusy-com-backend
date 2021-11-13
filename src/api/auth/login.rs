@@ -1,5 +1,5 @@
 use crate::constants::MESSAGE_LOGIN_SUCCESS;
-use crate::model::errors::Error;
+use crate::model::errors::ServiceError;
 use crate::model::response::ResponseBody;
 use crate::model::user::User;
 use crate::schema::users::dsl::{email, users};
@@ -9,7 +9,7 @@ use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 
 use crate::utils::{generate_jwt, verify_password};
-use crate::{model::db::Pool, model::errors::ServiceError};
+use crate::{model::db::Pool, model::errors::GlobalServiceError};
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
@@ -27,14 +27,14 @@ pub struct LoginResponse {
 pub async fn login_handler(
     req: web::Json<LoginRequest>,
     pool: web::Data<Pool>,
-) -> Result<HttpResponse, ServiceError> {
+) -> Result<HttpResponse, GlobalServiceError> {
     let res = web::block(move || query(req.into_inner(), pool)).await;
 
     match res {
         Ok(login_response) => return Ok(HttpResponse::Ok().json(login_response)),
         Err(err) => match err {
             BlockingError::Error(service_error) => Err(service_error),
-            BlockingError::Canceled => Err(ServiceError::InternalServerError),
+            BlockingError::Canceled => Err(GlobalServiceError::InternalServerError),
         },
     }
 }
@@ -42,7 +42,7 @@ pub async fn login_handler(
 fn query(
     req: LoginRequest,
     pool: web::Data<Pool>,
-) -> Result<ResponseBody<LoginResponse>, ServiceError> {
+) -> Result<ResponseBody<LoginResponse>, GlobalServiceError> {
     let conn: &PgConnection = &pool.get().unwrap();
     use crate::diesel::ExpressionMethods;
 
@@ -50,9 +50,11 @@ fn query(
 
     match res {
         Err(diesel::result::Error::NotFound) => {
-            return Err(ServiceError::Unauthorized(Error::EmailOrPasswordMismatch))
+            return Err(GlobalServiceError::Unauthorized(
+                ServiceError::EmailOrPasswordMismatch,
+            ))
         }
-        Err(_) => return Err(ServiceError::InternalServerError),
+        Err(_) => return Err(GlobalServiceError::InternalServerError),
         Ok(mut current_users) => {
             if let Some(user) = current_users.pop() {
                 match verify_password(&req.password, &user.hashed_password) {
@@ -70,12 +72,14 @@ fn query(
                         ));
                     }
                     Err(_) => {
-                        return Err(ServiceError::Unauthorized(Error::EmailOrPasswordMismatch))
+                        return Err(GlobalServiceError::Unauthorized(
+                            ServiceError::EmailOrPasswordMismatch,
+                        ))
                     }
                 }
             }
 
-            return Err(ServiceError::InternalServerError);
+            return Err(GlobalServiceError::InternalServerError);
         }
     }
 }

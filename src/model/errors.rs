@@ -5,20 +5,31 @@ use serde::{Deserialize, Serialize};
 use crate::model::response::ResponseBody;
 
 #[derive(Debug, Display, Serialize, Deserialize, Clone, Copy)]
-pub enum Error {
+pub enum ServiceError {
     #[display(fmt = "00001")]
     EmailOrPasswordMismatch,
+    #[display(fmt = "00002")]
+    EmailAlreadyExists,
+    #[display(fmt = "00003")]
+    UserNotFound,
+    #[display(fmt = "00004")]
+    InvalidToken,
 }
 
-pub fn error_code_to_message(code: Option<Error>) -> Option<String> {
-    match code {
+pub fn error_to_message(error: Option<ServiceError>) -> Option<String> {
+    match error {
         None => None,
-        Some(Error::EmailOrPasswordMismatch) => Some("Email or password mismatch".to_string()),
+        Some(ServiceError::EmailOrPasswordMismatch) => {
+            Some("Email or password mismatch".to_string())
+        }
+        Some(ServiceError::EmailAlreadyExists) => Some("Email already exists".to_string()),
+        Some(ServiceError::UserNotFound) => Some("User not found".to_string()),
+        Some(ServiceError::InvalidToken) => Some("Invalid token".to_string()),
     }
 }
 
 #[derive(Debug, Display)]
-pub enum ServiceError {
+pub enum GlobalServiceError {
     #[display(fmt = "Internal Server Error")]
     InternalServerError,
 
@@ -26,30 +37,30 @@ pub enum ServiceError {
     BadRequest(String),
 
     #[display(fmt = "Unauthorized")]
-    Unauthorized(Error),
+    Unauthorized(ServiceError),
 }
 
-impl ResponseError for ServiceError {
+impl ResponseError for GlobalServiceError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            ServiceError::InternalServerError => HttpResponse::InternalServerError()
+            GlobalServiceError::InternalServerError => HttpResponse::InternalServerError()
                 .json("Internal Server Error, please please pleaseee try again maybe later"),
-            ServiceError::BadRequest(ref message) => {
+            GlobalServiceError::BadRequest(ref message) => {
                 HttpResponse::BadRequest().json(ResponseBody::<()>::new(
-                    ServiceError::BadRequest(message.to_owned())
+                    GlobalServiceError::BadRequest(message.to_owned())
                         .to_string()
                         .as_str(),
                     None,
                     None,
                 ))
             }
-            ServiceError::Unauthorized(ref err) => {
+            GlobalServiceError::Unauthorized(ref err) => {
                 HttpResponse::Unauthorized().json(ResponseBody::<()>::new(
-                    ServiceError::Unauthorized(err.to_owned())
+                    GlobalServiceError::Unauthorized(err.to_owned())
                         .to_string()
                         .as_str(),
                     None,
-                    Some(Error::EmailOrPasswordMismatch),
+                    Some(ServiceError::EmailOrPasswordMismatch),
                 ))
             }
         }

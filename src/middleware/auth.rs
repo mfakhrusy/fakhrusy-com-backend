@@ -3,7 +3,7 @@
 
 use crate::{
     constants,
-    model::{auth::AuthMiddlewareData, db::Pool, response::ResponseBody},
+    model::{auth::AuthMiddlewareData, db::Pool, errors::ServiceError, response::ResponseBody},
     utils::decode_jwt,
 };
 use actix_service::{Service, Transform};
@@ -118,7 +118,7 @@ where
                         .json(ResponseBody::<()>::new(
                             constants::MESSAGE_INVALID_TOKEN,
                             None,
-                            None,
+                            Some(ServiceError::InvalidToken),
                         ))
                         .into_body(),
                 ))
