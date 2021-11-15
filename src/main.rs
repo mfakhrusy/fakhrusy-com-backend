@@ -57,7 +57,7 @@ async fn main() -> std::io::Result<()> {
                     .service(web::resource("/profile").route(web::get().to(my_profile_handler))),
             )
     })
-    .bind("127.0.0.1:8089")?
+    .bind("127.0.0.1:8080")?
     .run()
     .await
 }
